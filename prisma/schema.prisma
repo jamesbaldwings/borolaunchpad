@@ -1,0 +1,172 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("user")
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Host {
+  id                Int      @id @default(autoincrement())
+  name              String
+  bio               String?  @db.Text
+  photoUrl          String?  @map("photo_url")
+  email             String?
+  phone             String?
+  isSpotlight       Boolean  @default(false) @map("is_spotlight")
+  spotlightQuote    String?  @map("spotlight_quote") @db.Text
+  spotlightStory    String?  @map("spotlight_story") @db.Text
+  eventsHostedCount Int      @default(0) @map("events_hosted_count")
+  createdAt         DateTime @default(now()) @map("created_at")
+  events            Event[]
+
+  @@map("hosts")
+}
+
+model Event {
+  id               Int      @id @default(autoincrement())
+  title            String
+  description      String?  @db.Text
+  category         String
+  eventDate        DateTime @map("event_date") @db.Date
+  startTime        String?  @map("start_time")
+  endTime          String?  @map("end_time")
+  price            Decimal? @db.Decimal(10, 2)
+  spotsTotal       Int      @default(20) @map("spots_total")
+  spotsRemaining   Int      @default(20) @map("spots_remaining")
+  isSoldOut        Boolean  @default(false) @map("is_sold_out")
+  isPublished      Boolean  @default(true) @map("is_published")
+  hostId           Int?     @map("host_id")
+  host             Host?    @relation(fields: [hostId], references: [id])
+  imageUrl         String?  @map("image_url")
+  registrationType String   @default("blp") @map("registration_type")
+  externalUrl      String?  @map("external_url")
+  contactInfo      String?  @map("contact_info")
+  createdAt        DateTime @default(now()) @map("created_at")
+  registrations    Registration[]
+
+  @@index([eventDate])
+  @@index([isPublished])
+  @@map("events")
+}
+
+model Registration {
+  id        Int      @id @default(autoincrement())
+  eventId   Int      @map("event_id")
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  phone     String?
+  spots     Int      @default(1)
+  message   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("registrations")
+}
+
+model Package {
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?  @db.Text
+  priceDisplay String?  @map("price_display")
+  features     Json     @default("[]")
+  sortOrder    Int      @default(0) @map("sort_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("packages")
+}
+
+model Booking {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  email              String
+  phone              String
+  preferredDate      DateTime @map("preferred_date") @db.Date
+  backupDate         DateTime? @map("backup_date") @db.Date
+  preferredStartTime String?  @map("preferred_start_time")
+  preferredEndTime   String?  @map("preferred_end_time")
+  eventType          String?  @map("event_type")
+  expectedGuests     Int?     @map("expected_guests")
+  estimatedVehicles  Int?     @map("estimated_vehicles")
+  foodServed         Boolean  @default(false) @map("food_served")
+  beveragesServed    Boolean  @default(false) @map("beverages_served")
+  needsTables        Boolean  @default(false) @map("needs_tables")
+  needsChairs        Boolean  @default(false) @map("needs_chairs")
+  needsTents         Boolean  @default(false) @map("needs_tents")
+  needsCoolers       Boolean  @default(false) @map("needs_coolers")
+  needsTrailer       Boolean  @default(false) @map("needs_trailer")
+  packageInterest    String?  @map("package_interest")
+  previousExperience String?  @map("previous_experience")
+  eventDescription   String?  @map("event_description") @db.Text
+  ideaDescription    String?  @map("idea_description") @db.Text
+  status             String   @default("pending")
+  adminNotes         String?  @map("admin_notes") @db.Text
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@index([status])
+  @@map("bookings")
+}
+
+model ContactSubmission {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String?
+  reason    String?
+  message   String   @db.Text
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contact_submissions")
+}
