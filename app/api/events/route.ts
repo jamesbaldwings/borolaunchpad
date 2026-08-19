@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { isAdminAuthenticated } from '@/lib/admin-auth';
 
 export async function GET(req: Request) {
   try {
@@ -8,26 +9,41 @@ export async function GET(req: Request) {
     const category = searchParams.get('category');
     const published = searchParams.get('published');
     const limit = searchParams.get('limit');
+    const past = searchParams.get('past');
+
+    // Unpublished / past events are admin-only.
+    const isAdmin = isAdminAuthenticated();
+    const includeUnpublished = published === 'all' && isAdmin;
 
     const where: any = {};
-    if (published !== 'all') where.isPublished = true;
+    if (!includeUnpublished) where.isPublished = true;
     if (category && category !== 'All') where.category = category;
-    where.eventDate = { gte: new Date() };
+    if (!(past === 'true' && isAdmin)) where.eventDate = { gte: new Date() };
+
+    const take = limit && Number.isFinite(parseInt(limit)) ? Math.min(parseInt(limit), 100) : undefined;
 
     const events = await prisma.event.findMany({
       where,
-      include: { host: true },
+      include: {
+        host: {
+          select: {
+            id: true,
+            name: true,
+            bio: true,
+            photoUrl: true,
+            isSpotlight: true,
+            spotlightQuote: true,
+            spotlightStory: true,
+            eventsHostedCount: true,
+          },
+        },
+      },
       orderBy: { eventDate: 'asc' },
-      ...(limit ? { take: parseInt(limit) } : {}),
+      ...(take ? { take } : {}),
     });
 
-    const safe = events.map((e: any) => ({
-      ...e,
-      price: e.price ? Number(e.price) : null,
-    }));
-
-    return NextResponse.json(safe);
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message ?? 'Server error' }, { status: 500 });
+    return NextResponse.json(events.map((e: any) => ({ ...e, price: e.price ? Number(e.price) : null })));
+  } catch {
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

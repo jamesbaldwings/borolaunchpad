@@ -1,8 +1,15 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
+import { getAdminCookieName } from '@/lib/admin-auth';
 
 export async function POST() {
   const res = NextResponse.json({ success: true });
-  res.cookies.set('blp_admin_session', '', { maxAge: 0, path: '/' });
+  res.cookies.set(getAdminCookieName(), '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 0,
+    path: '/',
+  });
   return res;
 }

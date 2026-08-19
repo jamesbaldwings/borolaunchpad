@@ -12,12 +12,23 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('events');
 
+  // Restore the session on refresh instead of forcing another password entry.
+  useEffect(() => {
+    let active = true;
+    fetch('/api/admin/session')
+      .then((r) => r.json())
+      .then((d) => { if (active && d?.authenticated) setAuthenticated(true); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
-      if (res.ok) { setAuthenticated(true); toast.success('Logged in'); }
+      if (res.ok) { setAuthenticated(true); setPassword(''); toast.success('Logged in'); }
+      else if (res.status === 429) toast.error('Too many attempts. Try again later.');
       else toast.error('Invalid password');
     } catch { toast.error('Error'); }
     setLoading(false);

@@ -1,21 +1,31 @@
 # Boro Launch Pad
 
-Website for **Boro Launch Pad**, a small-event venue near Murfreesboro, Tennessee built for workshops, classes, pop-ups, celebrations and new ideas.
+Boro Launch Pad is a small-event venue website for Murfreesboro, Tennessee. It includes public event listings, host spotlights, venue/event ideas, registration, contact and booking-request forms, and an admin area.
 
-## Run locally
+## Railway deployment
+
+1. Create a Railway project from this GitHub repository.
+2. Add a PostgreSQL service.
+3. Set `DATABASE_URL` from Railway PostgreSQL.
+4. Set `NEXTAUTH_SECRET` to a long random value.
+5. Set `ADMIN_PASSWORD` to the desired admin password.
+6. Set `NEXTAUTH_URL` to the Railway public domain after the first deployment, then redeploy.
+
+`railway.json` runs Prisma generation and the Next.js build, then applies the Prisma schema before starting the app.
+
+## Local development
+
+Copy `.env.example` to `.env`, configure PostgreSQL, then run:
 
 ```bash
-npm start
+npm install
+npx prisma generate
+npx prisma db push
+npm run dev
 ```
 
-Open `http://localhost:3000`.
+Optional seed data:
 
-## Deploy on Railway
-
-This repository is Railway-ready. Create a Railway project from this GitHub repository and Railway will use `railway.json` plus the `npm start` script. No build step or environment variables are required for the current version.
-
-> The inquiry endpoint currently returns an on-screen confirmation but does not persist or email submissions. Connect an email provider or database before using it for production leads.
-
-## Editing events
-
-Upcoming event cards currently live in `public/app.js`. Venue copy and page sections are in `public/index.html`, with styling in `public/styles.css`.
+```bash
+npm run seed
+```

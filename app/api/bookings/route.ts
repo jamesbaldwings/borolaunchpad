@@ -1,8 +1,12 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
+  const limited = rateLimit(`booking:${clientIp(req)}`, 5, 60 * 60 * 1000);
+  if (!limited.ok) return tooManyRequests(limited.retryAfterSeconds);
+
   try {
     const body = await req.json();
     const { name, email, phone, preferredDate, backupDate, preferredStartTime, preferredEndTime,
