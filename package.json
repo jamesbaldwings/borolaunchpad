@@ -6,8 +6,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "tsx --require dotenv/config scripts/safe-seed.ts",
-    "postinstall": "prisma generate"
+    "seed": "tsx --require dotenv/config scripts/safe-seed.ts"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config scripts/safe-seed.ts"
